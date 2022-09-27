@@ -11,8 +11,7 @@ from flask_marshmallow import Marshmallow
 #Instancia de FLASK mi aplicacion
 app = Flask(__name__)
 #Dando la configuracion a app Cadena de Conexion
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost:3306/bdpythonapi'
-#Configuracion por defecto para no alertar o warning
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:admin@35.184.165.166:3306/principal'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 #SQL alchemy pasar la configuracion
@@ -20,89 +19,124 @@ db = SQLAlchemy(app)
 #Instanciar Marshmellow utiliza la instacion de app (Marshemellow sirve para esquema)
 ma = Marshmallow(app)
 
-#Creacion de Tabla Categoria
-#Datos de mi tabla, definir sus propiedades los mismos que la de BD
-class Categoria(db.Model):
-    cat_id = db.Column(db.Integer,primary_key=True)
-    cat_nom = db.Column(db.String(100))
-    cat_desp = db.Column(db.String(100))
+class seguimiento(db.Model):
+    
+    accion = db.Column(db.String(1000), nullable=True)
+    numero_accion = db.Column(db.String(50), nullable=True, primary_key=True)
+    proceso = db.Column(db.String(50), nullable=True)
+    correctiva = db.Column(db.String(50), nullable=True)
+    mejora = db.Column(db.String(50), nullable=True)
+    fecha_definicion = db.Column(db.String(50), nullable=True)
+    fecha_cierre_propuesta = db.Column(db.String(50), nullable=True)
+    fecha_cierre_real = db.Column(db.String(50), nullable=True)
+    eficaz = db.Column(db.String(50), nullable=True)
+    nueva_accion_al_no_ser_eficaz = db.Column(db.String(1000), nullable=True)
+    observaciones = db.Column(db.String(1000), nullable=True)
+    pendientes = db.Column(db.String(1000), nullable=True)
+    hallazgo = db.Column(db.String(1000), nullable=True)
+    
+    def __init__(self,accion,numero_accion,proceso,correctiva,mejora,fecha_definicion,fecha_cierre_propuesta,fecha_cierre_real,eficaz,nueva_accion_al_no_ser_eficaz,observaciones,pendientes,hallazgo):
+        self.accion = accion
+        self.numero_accion = numero_accion
+        self.proceso = proceso
+        self.correctiva = correctiva
+        self.mejora = mejora
+        self.fecha_definicion = fecha_definicion
+        self.fecha_cierre_propuesta = fecha_cierre_propuesta
+        self.fecha_cierre_real = fecha_cierre_real
+        self.eficaz = eficaz
+        self.nueva_accion_al_no_ser_eficaz = nueva_accion_al_no_ser_eficaz
+        self.observaciones = observaciones
+        self.pendientes = pendientes
+        self.hallazgo = hallazgo
 
-    #Constructor cada vez que se instancia la clase
-    #Al recibir asignar los datos
-    def __init__(self,cat_nom,cat_desp):
-        self.cat_nom = cat_nom
-        self.cat_desp = cat_desp
-    #Modelo de Datos completado
-
-#Crea las tablas
 db.create_all()
-
 #Esquema Categoria
-#Esquema para poder interactuar
-#Desde ma voy a crear un Esquema
-class CategoriaSchema(ma.Schema):
+class SeguimientoSchema(ma.Schema):
     class Meta:
-        fields = ('cat_id','cat_nom','cat_desp')
+        fields = ('accion','numero_accion','proceso','correctiva','mejora','fecha_definicion','fecha_cierre_propuesta','fecha_cierre_real','eficaz','nueva_accion_al_no_ser_eficaz','observaciones','pendientes','hallazgo')
+#una sola respuesta        
+seguimiento_schema = SeguimientoSchema()
+#muchas respuestas
+seguimientos_schema = SeguimientoSchema(many=True)
 
-#Una sola Respuesta
-categoria_schema = CategoriaSchema()
-#Cuando sean muchas respuestas
-categorias_schema = CategoriaSchema(many=True)
-
-#GET#####################################
-@app.route('/categoria',methods=['GET'])
-def get_categorias():
-    all_categorias = Categoria.query.all()
-    result = categorias_schema.dump(all_categorias)
+#GET
+@app.route('/seguimiento', methods=['GET'])
+def get_seguimiento():
+    all_seguimientos = seguimiento.query.all()
+    result = seguimientos_schema.dump(all_seguimientos)
     return jsonify(result)
 
-#GET X ID###############################
-@app.route('/categoria/<id>',methods=['GET'])
-def get_categoria_x_id(id):
-    una_categoria = Categoria.query.get(id)
-    return categoria_schema.jsonify(una_categoria)
 
-#POST##################################
-@app.route('/categoria',methods=['POST'])
-def insert_categoria():
+#GET ID
+@app.route('/seguimiento/<numero_accion>', methods=['GET'])
+def get_seguimiento_x_id(numero_accion):
+    un_seguimiento = seguimiento.query.get(numero_accion)
+    return seguimiento_schema.jsonify(un_seguimiento)
+
+#POST
+@app.route('/seguimiento', methods=['POST'])
+def insert_seguimiento():
     data = request.get_json(force=True)
-    cat_nom = data['cat_nom']
-    cat_desp = data['cat_desp']
-
-    nuevocategoria = Categoria(cat_nom, cat_desp)
-
-    db.session.add(nuevocategoria)
+    accion = data['accion']
+    numero_accion = data['numero_accion']
+    proceso = data['proceso']
+    correctiva = data['correctiva']
+    mejora = data['mejora']
+    fecha_definicion = data['fecha_definicion']
+    fecha_cierre_propuesta = data['fecha_cierre_propuesta']
+    fecha_cierre_real = data['fecha_cierre_real']
+    eficaz = data['eficaz']
+    nueva_accion_al_no_ser_eficaz = data['nueva_accion_al_no_ser_eficaz']
+    observaciones = data['observaciones']
+    pendientes = data['pendientes']
+    hallazgo = data['hallazgo']
+    nuevo_registro = seguimiento(accion,numero_accion,proceso,correctiva,mejora,fecha_definicion,fecha_cierre_propuesta,fecha_cierre_real,eficaz,nueva_accion_al_no_ser_eficaz,observaciones,pendientes,hallazgo)
+    
+    db.session.add(nuevo_registro)
     db.session.commit()
-    return categoria_schema.jsonify(nuevocategoria)
+    return seguimiento_schema.jsonify(nuevo_registro)
 
-#PUT###################################
-@app.route('/categoria/<id>',methods=['PUT'])
-def update_categoria(id):
-    actualizarcategoria = Categoria.query.get(id)
-
+#PUT
+@app.route('/seguimiento/<numero_accion>', methods=['PUT'])
+def update_seguimiento(numero_accion):
+    id_seguimiento = seguimiento.query.get(numero_accion)
+    
     data = request.get_json(force=True)
-    cat_nom = data['cat_nom']
-    cat_desp = data['cat_desp']
-
-    actualizarcategoria.cat_nom = cat_nom
-    actualizarcategoria.cat_desp = cat_desp
-
+    accion = data['accion']
+    proceso = data['proceso']
+    correctiva = data['correctiva']
+    mejora = data['mejora']
+    fecha_definicion = data['fecha_definicion']
+    fecha_cierre_propuesta = data['fecha_cierre_propuesta']
+    fecha_cierre_real = data['fecha_cierre_real']
+    eficaz = data['eficaz']
+    nueva_accion_al_no_ser_eficaz = data['nueva_accion_al_no_ser_eficaz']
+    observaciones = data['observaciones']
+    pendientes = data['pendientes']
+    hallazgo = data['hallazgo']
+    
+    id_seguimiento.accion = accion
+    id_seguimiento.proceso = proceso
+    id_seguimiento.correctiva = correctiva
+    id_seguimiento.mejora = mejora
+    id_seguimiento.fecha_definicion = fecha_definicion
+    id_seguimiento.fecha_cierre_propuesta = fecha_cierre_propuesta
+    id_seguimiento.fecha_cierre_real = fecha_cierre_real
+    id_seguimiento.eficaz = eficaz
+    id_seguimiento.nueva_accion_al_no_ser_eficaz = nueva_accion_al_no_ser_eficaz
+    id_seguimiento.observaciones = observaciones
+    id_seguimiento.pendientes = pendientes
+    id_seguimiento.hallazgo = hallazgo
+    
     db.session.commit()
-
-    return categoria_schema.jsonify(actualizarcategoria)
-
-#DELETE################################
-@app.route('/categoria/<id>',methods=['DELETE'])
-def delete_categoria(id):
-    eliminarcategoria = Categoria.query.get(id)
-    db.session.delete(eliminarcategoria)
-    db.session.commit()
-    return categoria_schema.jsonify(eliminarcategoria)
-
+    
+    return seguimiento_schema.jsonify(id_seguimiento)
+       
 #Mensaje de Bienvenida
 @app.route('/',methods=['GET'])
 def index():
     return jsonify({'Mensaje':'Bienvenido al tutorial API REST Python'})
 
 if __name__=="__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0",port=5050,debug=True)
